@@ -6,7 +6,6 @@ import { HeroSlider } from "@/components/site/HeroSlider";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
 import { bannersQuery, categoriesQuery, categoryImage, productsQuery } from "@/lib/store";
-import heroImg from "@/assets/hero.jpg";
 import necklaceImg from "@/assets/necklace.jpg";
 
 export const Route = createFileRoute("/")({
