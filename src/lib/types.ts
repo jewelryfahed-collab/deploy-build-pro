@@ -62,6 +62,10 @@ export interface SiteSettings {
   whatsapp: string;
   lbp_rate: number;
   delivery_fees: Record<string, number>;
+  cod_enabled?: boolean;
+  pickup_enabled?: boolean;
+  instagram_url?: string | null;
+  facebook_url?: string | null;
 }
 
 export interface OrderItem {
