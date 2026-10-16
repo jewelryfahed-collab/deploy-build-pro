@@ -357,7 +357,7 @@ function SettingsAdmin() {
     <div className="grid gap-8 lg:grid-cols-2">
       <section className="glass space-y-4 rounded-2xl p-6">
         <p className="font-display text-2xl">Business</p>
-        <F label="Brand name"><Input value={s.brand_name} onChange={(e) => setS({ ...s, brand_name: e.target.value })} /></F>
+        <F label="Brand name"><Input value={s.brand} onChange={(e) => setS({ ...s, brand: e.target.value })} /></F>
         <F label="Address"><Input value={s.address} onChange={(e) => setS({ ...s, address: e.target.value })} /></F>
         <div className="grid grid-cols-2 gap-3">
           <F label="Phone 1"><Input value={s.phone_primary} onChange={(e) => setS({ ...s, phone_primary: e.target.value })} /></F>
@@ -375,15 +375,10 @@ function SettingsAdmin() {
           ))}
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <F label="Display currency">
-            <select value={s.currency} onChange={(e) => setS({ ...s, currency: e.target.value })} className="h-9 w-full rounded-md border bg-card px-2 text-sm">
-              <option value="USD">$ USD</option><option value="LBP">LBP</option>
-            </select>
-          </F>
           <F label="USD → LBP rate"><Input type="number" value={s.lbp_rate} onChange={(e) => setS({ ...s, lbp_rate: Number(e.target.value) })} /></F>
         </div>
-        <label className="flex items-center gap-3 text-sm"><Switch checked={s.cod_enabled} onCheckedChange={(v) => setS({ ...s, cod_enabled: v })} /> Cash on delivery</label>
-        <label className="flex items-center gap-3 text-sm"><Switch checked={s.pickup_enabled} onCheckedChange={(v) => setS({ ...s, pickup_enabled: v })} /> Store pickup</label>
+        <label className="flex items-center gap-3 text-sm"><Switch checked={s.cod_enabled !== false} onCheckedChange={(v) => setS({ ...s, cod_enabled: v })} /> Cash on delivery</label>
+        <label className="flex items-center gap-3 text-sm"><Switch checked={s.pickup_enabled !== false} onCheckedChange={(v) => setS({ ...s, pickup_enabled: v })} /> Store pickup</label>
       </section>
       <Button variant="luxe" size="xl" className="lg:col-span-2" onClick={save}>Save settings</Button>
       <p className="text-xs text-muted-foreground lg:col-span-2">Preview the store: <Link to="/" className="text-gold">open homepage</Link></p>
