@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 export function SiteHeader() {
   const { count, setOpen } = useCart();
   const { data: settings } = useQuery(settingsQuery);
-  const { data: categories = [] } = useQuery(categoriesQuery);
+  const { data: categories = [] } = useQuery(categoriesQuery());
   const [mega, setMega] = useState(false);
   const phones: string[] = [settings?.phone_primary ?? BUSINESS.phones[0]!, settings?.phone_secondary ?? BUSINESS.phones[1]!];
 
@@ -95,7 +95,7 @@ function MobileNav({ categories }: { categories: { id: string; slug: string; nam
 function SearchBox() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
-  const { data: products = [] } = useQuery({ ...productsQuery, enabled: open });
+  const { data: products = [] } = useQuery({ ...productsQuery(), enabled: open });
   const nav = useNavigate();
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { if (open) ref.current?.focus(); }, [open]);

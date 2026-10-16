@@ -73,9 +73,9 @@ export function HeroSlider({ banners }: { banners: Banner[] }) {
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             className="max-w-2xl"
           >
-            <p className="eyebrow">{b?.eyebrow ?? "Exquisite Craftsmanship"}</p>
+            <p className="eyebrow">{"Exquisite Craftsmanship"}</p>
             <h1 className="mt-5 text-5xl leading-[0.95] sm:text-7xl lg:text-8xl">
-              {(b?.title ?? "Unleash the shining beauty").split(" ").map((w, k, arr) =>
+              {(b?.title ?? "Unleash the shining beauty").split(" ").map((w: string, k: number, arr: string[]) =>
                 k === arr.length - 1 ? <em key={k} className="text-gold-gradient italic">{w}</em> : <span key={k}>{w} </span>,
               )}
             </h1>

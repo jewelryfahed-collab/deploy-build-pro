@@ -24,7 +24,7 @@ export const Route = createFileRoute("/product/$slug")({
 
 function ProductPage() {
   const { slug } = Route.useParams();
-  const { data: products = [], isLoading } = useQuery(productsQuery);
+  const { data: products = [], isLoading } = useQuery(productsQuery());
   const { data: settings } = useQuery(settingsQuery);
   const { add } = useCart();
   const p = products.find((x) => x.slug === slug);

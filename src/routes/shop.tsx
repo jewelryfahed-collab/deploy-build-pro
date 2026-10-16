@@ -25,8 +25,8 @@ export const Route = createFileRoute("/shop")({
 function Shop() {
   const { category } = Route.useSearch();
   const nav = useNavigate({ from: "/shop" });
-  const { data: products = [] } = useQuery(productsQuery);
-  const { data: categories = [] } = useQuery(categoriesQuery);
+  const { data: products = [] } = useQuery(productsQuery());
+  const { data: categories = [] } = useQuery(categoriesQuery());
   const [metals, setMetals] = useState<string[]>([]);
   const [gem, setGem] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState(5000);

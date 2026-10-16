@@ -27,8 +27,8 @@ const fade = { initial: { opacity: 0, y: 40 }, whileInView: { opacity: 1, y: 0 }
 
 function Home() {
   const { data: banners = [] } = useQuery(bannersQuery);
-  const { data: products = [] } = useQuery(productsQuery);
-  const { data: categories = [] } = useQuery(categoriesQuery);
+  const { data: products = [] } = useQuery(productsQuery());
+  const { data: categories = [] } = useQuery(categoriesQuery());
   const [metal, setMetal] = useState("18k_gold");
   const featured = products.filter((p) => p.is_featured);
 
