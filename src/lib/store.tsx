@@ -7,7 +7,7 @@ import braceletImg from "@/assets/bracelet.jpg";
 import { getBannersFn, getCategoriesFn, getProductsFn, getSessionFn, getSettingsFn, validatePromoFn } from "./api.functions";
 import type { Category, Lang, Metal, Product, SessionUser, SiteSettings } from "./types";
 
-export type { Category, Product, SessionUser, SiteSettings } from "./types";
+export type { Banner, Category, Product, SessionUser, SiteSettings } from "./types";
 export type { Metal, PromoResult } from "./types";
 
 export async function validatePromo(code: string, subtotal: number) {

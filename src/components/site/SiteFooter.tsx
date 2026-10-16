@@ -36,7 +36,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t py-6 text-center text-[0.65rem] uppercase tracking-[0.3em] text-muted-foreground">
-        © {new Date().getFullYear()} {s?.brand_name ?? BUSINESS.brand} · Delivery across Lebanon · Cash on delivery
+        © {new Date().getFullYear()} {s?.brand ?? BUSINESS.brand} · Delivery across Lebanon · Cash on delivery
       </div>
     </footer>
   );

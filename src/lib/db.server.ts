@@ -20,7 +20,7 @@ interface D1Database {
 async function getD1(): Promise<D1Database | null> {
   try {
     const mod = (await import("cloudflare:workers")) as { env?: Record<string, unknown> };
-    return (mod.env?.DB as D1Database | undefined) ?? null;
+    return (mod.env?.["DB"] as D1Database | undefined) ?? null;
   } catch {
     return null;
   }
@@ -333,7 +333,7 @@ export async function listAllBanners(): Promise<Banner[]> {
   const db = await getD1();
   if (!db) return getMemory().banners;
   await ensureSchema(db);
-  const { results } = await db.prepare("SELECT * FROM banners ORDER BY sort_order").bind().all<Banner & { is_active: number }>();
+  const { results } = await db.prepare("SELECT * FROM banners ORDER BY sort_order").bind().all<Omit<Banner, "is_active"> & { is_active: number }>();
   return results.map((b) => ({ ...b, is_active: !!b.is_active }));
 }
 
@@ -385,7 +385,7 @@ async function promoDb(): Promise<D1Database | null> {
 export async function listPromotions(): Promise<Promotion[]> {
   const db = await promoDb();
   if (!db) return memPromos;
-  const { results } = await db.prepare("SELECT * FROM promotions ORDER BY created_at DESC").bind().all<Promotion & { is_active: number }>();
+  const { results } = await db.prepare("SELECT * FROM promotions ORDER BY created_at DESC").bind().all<Omit<Promotion, "is_active"> & { is_active: number }>();
   return results.map((p) => ({ ...p, is_active: !!p.is_active }));
 }
 
