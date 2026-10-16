@@ -51,6 +51,7 @@ export interface Banner {
   cta_href: string | null;
   is_active: boolean;
   sort_order: number;
+  countdown_ends_at?: string | null;
 }
 
 export interface SiteSettings {
