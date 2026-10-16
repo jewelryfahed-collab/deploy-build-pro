@@ -15,6 +15,7 @@ import { MessageCircle } from "lucide-react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { CartProvider, settingsQuery } from "@/lib/store";
+import { LanguageProvider } from "@/lib/i18n";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { CartSheet } from "@/components/site/CartSheet";
@@ -164,9 +165,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <CartProvider>
-        <Chrome />
-      </CartProvider>
+      <LanguageProvider>
+        <CartProvider>
+          <Chrome />
+        </CartProvider>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

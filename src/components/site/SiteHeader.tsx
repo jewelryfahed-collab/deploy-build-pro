@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Menu, Phone, Search, ShoppingBag, User, X } from "lucide-react";
-import logo from "@/assets/fahed-logo.jpg.asset.json";
+const logo = { url: "/favicon.png" };
 import { BUSINESS, categoriesQuery, categoryImage, productImage, productsQuery, settingsQuery, useCart, usd } from "@/lib/store";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 

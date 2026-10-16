@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { signInFn, signUpFn } from "@/lib/api.functions";
 import { useI18n } from "@/lib/i18n";
-import logo from "@/assets/fahed-logo.jpg.asset.json";
+const logo = { url: "/favicon.png" };
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
