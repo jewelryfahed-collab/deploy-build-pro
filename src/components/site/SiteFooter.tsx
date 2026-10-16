@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, MessageCircle, Phone } from "lucide-react";
-const logo = { url: "/favicon.png" };
+import logoImg from "@/assets/logo.jpg";
+const logo = { url: logoImg };
 import { BUSINESS, settingsQuery } from "@/lib/store";
 
 export function SiteFooter() {
