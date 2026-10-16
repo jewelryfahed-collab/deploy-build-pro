@@ -99,3 +99,17 @@ export interface SessionUser {
   name: string | null;
   role: "admin" | "customer";
 }
+
+export interface Promotion {
+  id: string;
+  code: string;
+  discount_type: "PERCENTAGE" | "FIXED";
+  value: number;
+  min_order_usd: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export type PromoResult = { code: string; discount_usd: number } | null;

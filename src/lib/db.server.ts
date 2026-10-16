@@ -3,7 +3,7 @@
 // the user binds it in the Cloudflare dashboard (wrangler.jsonc declares it).
 
 import { SEED_BANNERS, SEED_CATEGORIES, SEED_SETTINGS, buildSeedProducts } from "./seed";
-import type { Banner, Category, Order, Product, SiteSettings } from "./types";
+import type { Banner, Category, Order, Product, Promotion, SiteSettings } from "./types";
 
 interface D1Prepared {
   bind(...args: unknown[]): {
@@ -326,4 +326,98 @@ export async function createUser(u: UserRow): Promise<void> {
   }
   await ensureSchema(db);
   await db.prepare("INSERT INTO users (id, email, name, password_hash, role, created_at) VALUES (?,?,?,?,?,?)").bind(u.id, u.email, u.name, u.password_hash, u.role, u.created_at).run();
+}
+
+// ---------- Banners (admin) ----------
+export async function listAllBanners(): Promise<Banner[]> {
+  const db = await getD1();
+  if (!db) return getMemory().banners;
+  await ensureSchema(db);
+  const { results } = await db.prepare("SELECT * FROM banners ORDER BY sort_order").bind().all<Banner & { is_active: number }>();
+  return results.map((b) => ({ ...b, is_active: !!b.is_active }));
+}
+
+export async function upsertBanner(b: Banner): Promise<void> {
+  const db = await getD1();
+  if (!db) {
+    const m = getMemory();
+    const i = m.banners.findIndex((x) => x.id === b.id);
+    if (i >= 0) m.banners[i] = b;
+    else m.banners.push(b);
+    return;
+  }
+  await ensureSchema(db);
+  await db.prepare(
+    `INSERT INTO banners (id, title, subtitle, image_url, cta_label, cta_href, is_active, sort_order) VALUES (?,?,?,?,?,?,?,?)
+     ON CONFLICT(id) DO UPDATE SET title=excluded.title, subtitle=excluded.subtitle, image_url=excluded.image_url, cta_label=excluded.cta_label,
+       cta_href=excluded.cta_href, is_active=excluded.is_active, sort_order=excluded.sort_order`,
+  ).bind(b.id, b.title, b.subtitle, b.image_url, b.cta_label, b.cta_href, b.is_active ? 1 : 0, b.sort_order).run();
+}
+
+export async function deleteBanner(id: string): Promise<void> {
+  const db = await getD1();
+  if (!db) {
+    const m = getMemory();
+    m.banners = m.banners.filter((b) => b.id !== id);
+    return;
+  }
+  await ensureSchema(db);
+  await db.prepare("DELETE FROM banners WHERE id = ?").bind(id).run();
+}
+
+// ---------- Promotions ----------
+let promosTableEnsured = false;
+const memPromos: Promotion[] = [];
+async function promoDb(): Promise<D1Database | null> {
+  const db = await getD1();
+  if (!db) return null;
+  await ensureSchema(db);
+  if (!promosTableEnsured) {
+    await db.prepare(
+      `CREATE TABLE IF NOT EXISTS promotions (id TEXT PRIMARY KEY, code TEXT UNIQUE NOT NULL, discount_type TEXT NOT NULL DEFAULT 'PERCENTAGE',
+       value REAL NOT NULL DEFAULT 0, min_order_usd REAL NOT NULL DEFAULT 0, starts_at TEXT, ends_at TEXT, is_active INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL)`,
+    ).bind().run();
+    promosTableEnsured = true;
+  }
+  return db;
+}
+
+export async function listPromotions(): Promise<Promotion[]> {
+  const db = await promoDb();
+  if (!db) return memPromos;
+  const { results } = await db.prepare("SELECT * FROM promotions ORDER BY created_at DESC").bind().all<Promotion & { is_active: number }>();
+  return results.map((p) => ({ ...p, is_active: !!p.is_active }));
+}
+
+export async function createPromotion(p: Promotion): Promise<void> {
+  const db = await promoDb();
+  if (!db) return void memPromos.unshift(p);
+  await db.prepare(
+    "INSERT INTO promotions (id, code, discount_type, value, min_order_usd, starts_at, ends_at, is_active, created_at) VALUES (?,?,?,?,?,?,?,?,?)",
+  ).bind(p.id, p.code, p.discount_type, p.value, p.min_order_usd, p.starts_at, p.ends_at, p.is_active ? 1 : 0, p.created_at).run();
+}
+
+export async function setPromotionActive(id: string, active: boolean): Promise<void> {
+  const db = await promoDb();
+  if (!db) {
+    const p = memPromos.find((x) => x.id === id);
+    if (p) p.is_active = active;
+    return;
+  }
+  await db.prepare("UPDATE promotions SET is_active = ? WHERE id = ?").bind(active ? 1 : 0, id).run();
+}
+
+export async function deletePromotion(id: string): Promise<void> {
+  const db = await promoDb();
+  if (!db) {
+    const i = memPromos.findIndex((x) => x.id === id);
+    if (i >= 0) memPromos.splice(i, 1);
+    return;
+  }
+  await db.prepare("DELETE FROM promotions WHERE id = ?").bind(id).run();
+}
+
+export async function findPromotion(code: string): Promise<Promotion | null> {
+  const all = await listPromotions();
+  return all.find((p) => p.code === code.toUpperCase()) ?? null;
 }
