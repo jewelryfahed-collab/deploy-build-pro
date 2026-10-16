@@ -22,6 +22,28 @@ export const Route = createFileRoute("/product/$slug")({
   component: ProductPage,
 });
 
+function Gallery({ images, alt }: { images: string[]; alt: string }) {
+  const [active, setActive] = useState(0);
+  const current = images[active] ?? images[0];
+  return (
+    <div className="lg:sticky lg:top-28 lg:self-start">
+      <div className="overflow-hidden rounded-2xl border bg-card">
+        <img src={current} alt={alt} className="aspect-square w-full object-cover" />
+      </div>
+      {images.length > 1 && (
+        <div className="mt-4 grid grid-cols-5 gap-3">
+          {images.map((src, k) => (
+            <button key={src + k} type="button" onClick={() => setActive(k)} aria-label={`View image ${k + 1}`}
+              className={`overflow-hidden rounded-lg border transition ${k === active ? "ring-2 ring-gold" : "opacity-70 hover:opacity-100"}`}>
+              <img src={src} alt="" loading="lazy" className="aspect-square w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ProductPage() {
   const { slug } = Route.useParams();
   const { data: products = [], isLoading } = useQuery(productsQuery());
@@ -41,7 +63,7 @@ function ProductPage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
       <div className="grid gap-12 lg:grid-cols-[1.2fr_1fr]">
-        <JewelryViewer metal={metal} onMetalChange={setMetal} fallbackImages={[img, ...p.gallery]} modelUrl={p.model_url} className="aspect-square w-full lg:sticky lg:top-28" />
+        <Gallery images={[img, ...p.gallery.filter((g) => g && g !== img)]} alt={p.name} />
         <div>
           <p className="eyebrow">{p.categories?.name}</p>
           <h1 className="mt-3 text-5xl sm:text-6xl">{p.name}</h1>

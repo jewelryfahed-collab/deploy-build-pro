@@ -2,10 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { ArrowUpRight, Gem, Hammer, Truck } from "lucide-react";
-import { useState } from "react";
 import { HeroSlider } from "@/components/site/HeroSlider";
 import { ProductCard } from "@/components/site/ProductCard";
-import { JewelryViewer } from "@/components/jewelry/JewelryViewer";
 import { Button } from "@/components/ui/button";
 import { bannersQuery, categoriesQuery, categoryImage, productsQuery } from "@/lib/store";
 import heroImg from "@/assets/hero.jpg";
@@ -15,7 +13,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Fahed Jewelry Manufacturing — Fine Jewelry from Faitroun, Lebanon" },
-      { name: "description", content: "Handcrafted 18K gold, platinum, silver and diamond jewelry from Keserwan. Explore bridal and bespoke pieces in 3D." },
+      { name: "description", content: "Handcrafted 18K gold, platinum, silver and diamond jewelry from Keserwan. Explore bridal and bespoke pieces." },
       { property: "og:title", content: "Fahed Jewelry Manufacturing" },
       { property: "og:description", content: "Luxury fine jewelry handcrafted in Keserwan - Faitroun, Lebanon." },
     ],
@@ -29,7 +27,6 @@ function Home() {
   const { data: banners = [] } = useQuery(bannersQuery);
   const { data: products = [] } = useQuery(productsQuery());
   const { data: categories = [] } = useQuery(categoriesQuery());
-  const [metal, setMetal] = useState("18k_gold");
   const featured = products.filter((p) => p.is_featured);
 
   return (
@@ -68,19 +65,6 @@ function Home() {
               </Link>
             </motion.div>
           ))}
-        </div>
-      </section>
-
-      {/* 3D studio */}
-      <section className="bg-espresso-glow border-y">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-24 lg:grid-cols-2">
-          <motion.div {...fade}>
-            <p className="eyebrow">The 360° Studio</p>
-            <h2 className="mt-4 text-4xl sm:text-6xl">Glamour that <em className="text-gold-gradient">steals the show</em></h2>
-            <p className="mt-6 max-w-md text-muted-foreground">Rotate, zoom and relight our signature solitaire. Switch between 18K gold, rose gold, white gold and platinum — see the diamond catch the light before it ever leaves our atelier.</p>
-            <Button asChild variant="luxe" size="xl" className="mt-10"><Link to="/product/$slug" params={{ slug: "aurelia-solitaire" }}>Discover Aurelia <ArrowUpRight /></Link></Button>
-          </motion.div>
-          <JewelryViewer metal={metal} onMetalChange={setMetal} fallbackImages={[heroImg]} className="aspect-square w-full" />
         </div>
       </section>
 
