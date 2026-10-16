@@ -8,8 +8,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "fahed-jewelry",
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_name": "fahed",
+      "database_id": "c1b23eac-d63c-4139-b5d2-ffb46dda389d",
       "migrations_dir": "migrations"
     }
   ]
