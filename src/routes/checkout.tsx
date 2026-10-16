@@ -126,7 +126,7 @@ function Checkout() {
     }
     setBusy(false);
     if (error) return void toast.error("We couldn't place your order. Please try again.");
-    setDone({ id: id.slice(0, 8).toUpperCase(), total, name: parsed.data.customer_name.split(" ")[0], fulfillment });
+    setDone({ id: id.slice(0, 8).toUpperCase(), total, name: parsed.data.customer_name.split(" ")[0] ?? "", fulfillment });
     clear();
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
