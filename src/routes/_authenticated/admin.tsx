@@ -1,10 +1,29 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { LogOut, Pencil, Plus, Trash2, Upload } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/integrations/supabase/types";
+import { CheckCircle2, Github, LogOut, Pencil, Plus, Save, Trash2, Upload } from "lucide-react";
+import {
+  adminCreatePromoFn,
+  adminDeleteBannerFn,
+  adminDeleteProductFn,
+  adminDeletePromoFn,
+  adminListBannersFn,
+  adminListOrdersFn,
+  adminListPromosFn,
+  adminSetOrderStatusFn,
+  adminTogglePromoFn,
+  adminUpdateSettingsFn,
+  adminUpsertBannerFn,
+  adminUpsertProductFn,
+  getProductsFn,
+  getSettingsFn,
+  publishFn,
+  publishStatusFn,
+  signOutFn,
+  uploadMediaFn,
+} from "@/lib/api.functions";
+import type { Banner, OrderStatus, Promotion, SiteSettings } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,7 +47,6 @@ export const Route = createFileRoute("/_authenticated/admin")({
   component: Admin,
 });
 
-type OrderStatus = Database["public"]["Enums"]["order_status"];
 const STATUSES: { id: OrderStatus; label: string }[] = [
   { id: "pending", label: "Pending" },
   { id: "in_production", label: "In Production" },
@@ -37,32 +55,118 @@ const STATUSES: { id: OrderStatus; label: string }[] = [
   { id: "cancelled", label: "Cancelled" },
 ];
 
+// Pending-changes counter: "Save" keeps edits in the database, "Done" publishes once.
+let pending = 0;
+const listeners = new Set<(n: number) => void>();
+function markChanged() {
+  pending++;
+  listeners.forEach((l) => l(pending));
+}
+function resetChanged() {
+  pending = 0;
+  listeners.forEach((l) => l(0));
+}
+function usePending() {
+  const [n, setN] = useState(pending);
+  useEffect(() => {
+    listeners.add(setN);
+    return () => void listeners.delete(setN);
+  }, []);
+  return n;
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  const buf = new Uint8Array(await file.arrayBuffer());
+  let bin = "";
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+
+// Uploads the file to the GitHub repository and returns its public URL.
 async function uploadMedia(file: File, folder: string) {
-  const path = `${folder}/${crypto.randomUUID()}-${file.name.replace(/[^\w.-]/g, "_")}`;
-  const { error } = await supabase.storage.from("media").upload(path, file, { upsert: false });
-  if (error) throw error;
-  const { data, error: e2 } = await supabase.storage.from("media").createSignedUrl(path, 60 * 60 * 24 * 365 * 10);
-  if (e2 || !data) throw e2;
-  return data.signedUrl;
+  const { url } = await uploadMediaFn({ data: { folder, name: file.name, base64: await fileToBase64(file) } });
+  return url;
+}
+
+function useSignOut() {
+  const nav = useNavigate();
+  return async () => {
+    await signOutFn();
+    nav({ to: "/auth" });
+  };
+}
+
+function PublishBar() {
+  const n = usePending();
+  const qc = useQueryClient();
+  const { data: status } = useQuery({ queryKey: ["publish-status"], queryFn: () => publishStatusFn() });
+  const [busy, setBusy] = useState(false);
+  async function save() {
+    await qc.invalidateQueries();
+    toast.success("Saved. Press Done when you're ready to publish.");
+  }
+  async function done() {
+    setBusy(true);
+    try {
+      const r = await publishFn();
+      resetChanged();
+      if (r.committed && r.deployed) toast.success("Published to GitHub and the site is rebuilding.");
+      else if (r.committed) toast.success("Published to GitHub.");
+      else if (r.deployed) toast.success("Site rebuild started.");
+      else toast.message("Everything is saved. Connect GitHub to publish.");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="glass sticky top-20 z-30 mt-8 flex flex-wrap items-center gap-3 rounded-2xl p-4">
+      <Github className="size-5 text-gold" />
+      <div className="mr-auto text-sm">
+        <p>
+          {status?.github ? (
+            <>
+              Connected to <span className="text-gold">{status.repo}</span>
+            </>
+          ) : (
+            "GitHub not connected"
+          )}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          {n > 0 ? `${n} change${n > 1 ? "s" : ""} waiting to publish` : "No unpublished changes"}
+          {status && !status.deployHook ? " · no deploy hook set" : ""}
+        </p>
+      </div>
+      <Button variant="ghostGold" onClick={save}>
+        <Save /> Save
+      </Button>
+      <Button variant="luxe" onClick={done} disabled={busy}>
+        <CheckCircle2 /> {busy ? "Publishing…" : "Done"}
+      </Button>
+    </div>
+  );
 }
 
 function Admin() {
   const { loading, admin, email } = useIsAdmin();
+  const signOut = useSignOut();
   if (loading) return <div className="h-[60vh]" />;
   if (!admin)
     return (
       <div className="mx-auto max-w-md py-32 text-center">
         <h1 className="text-4xl">Signed in as {email}</h1>
         <p className="mt-4 text-muted-foreground">This account doesn't have atelier access.</p>
-        <Button variant="ghostGold" className="mt-8" onClick={() => supabase.auth.signOut()}>Sign out</Button>
+        <Button variant="ghostGold" className="mt-8" onClick={signOut}>Sign out</Button>
       </div>
     );
   return (
     <div className="mx-auto max-w-7xl px-4 py-12">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="eyebrow">Atelier dashboard</p><h1 className="mt-2 text-5xl">Good day, artisan</h1></div>
-        <Button variant="ghost" onClick={() => supabase.auth.signOut()}><LogOut /> Sign out</Button>
+        <Button variant="ghost" onClick={signOut}><LogOut /> Sign out</Button>
       </div>
+      <PublishBar />
       <Tabs defaultValue="orders" className="mt-10">
         <TabsList className="glass h-auto flex-wrap rounded-full p-1">
           {["orders", "products", "banners", "promotions", "settings"].map((t) => (
@@ -82,13 +186,13 @@ function Admin() {
 // ---------------- Orders ----------------
 function OrdersBoard() {
   const qc = useQueryClient();
-  const { data: orders = [] } = useQuery({
-    queryKey: ["admin-orders"],
-    queryFn: async () => (await supabase.from("orders").select("*").order("created_at", { ascending: false })).data ?? [],
-  });
+  const { data: orders = [] } = useQuery({ queryKey: ["admin-orders"], queryFn: () => adminListOrdersFn() });
   async function move(id: string, status: OrderStatus) {
-    const { error } = await supabase.from("orders").update({ status }).eq("id", id);
-    if (error) return void toast.error(error.message);
+    try {
+      await adminSetOrderStatusFn({ data: { id, status } });
+    } catch (e) {
+      return void toast.error((e as Error).message);
+    }
     qc.invalidateQueries({ queryKey: ["admin-orders"] });
   }
   return (
@@ -105,7 +209,7 @@ function OrdersBoard() {
                   <p className="text-xs text-muted-foreground">#{o.id.slice(0, 8).toUpperCase()} · {o.governorate} · {o.fulfillment}</p>
                   <a href={`tel:${o.phone}`} className="text-xs text-gold">{o.phone}</a>
                   <ul className="mt-2 text-xs text-muted-foreground">
-                    {(o.items as { name: string; qty: number; metal: string }[]).map((i, k) => <li key={k}>{i.qty}× {i.name} ({metalLabel(i.metal)})</li>)}
+                    {o.items.map((i, k) => <li key={k}>{i.qty}× {i.name} ({metalLabel(i.metal)})</li>)}
                   </ul>
                   <select value={o.status} onChange={(e) => move(o.id, e.target.value as OrderStatus)} className="mt-3 w-full rounded-md border bg-card px-2 py-1 text-xs">
                     {STATUSES.map((x) => <option key={x.id} value={x.id}>{x.label}</option>)}
@@ -121,33 +225,64 @@ function OrdersBoard() {
 }
 
 // ---------------- Products ----------------
-type ProductForm = Partial<Database["public"]["Tables"]["products"]["Insert"]>;
+type ProductForm = Partial<Product>;
 function ProductsAdmin() {
   const qc = useQueryClient();
-  const { data: categories = [] } = useQuery(categoriesQuery);
+  const { data: categories = [] } = useQuery(categoriesQuery());
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products"],
-    queryFn: async () => ((await supabase.from("products").select("*, categories(slug,name)").order("created_at", { ascending: false })).data ?? []) as Product[],
+    queryFn: async () => (await getProductsFn({ data: "en" })) as Product[],
   });
   const [edit, setEdit] = useState<ProductForm | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function save() {
-    if (!edit?.name || !edit.slug) return void toast.error("Name and slug are required");
+    if (!edit?.name_en || !edit.slug) return void toast.error("Name and slug are required");
     setBusy(true);
-    const payload = { ...edit, price_usd: Number(edit.price_usd ?? 0), compare_at_usd: edit.compare_at_usd ? Number(edit.compare_at_usd) : null, stock: Number(edit.stock ?? 0) } as Database["public"]["Tables"]["products"]["Insert"];
-    delete (payload as Record<string, unknown>)["categories"];
-    const { error } = edit.id ? await supabase.from("products").update(payload).eq("id", edit.id) : await supabase.from("products").insert(payload);
+    const payload: Product = {
+      id: edit.id || crypto.randomUUID(),
+      slug: edit.slug,
+      name: edit.name_en,
+      name_en: edit.name_en,
+      name_ar: edit.name_ar ?? "",
+      name_fr: edit.name_fr ?? "",
+      description: edit.description_en ?? null,
+      description_en: edit.description_en ?? null,
+      description_ar: edit.description_ar ?? null,
+      description_fr: edit.description_fr ?? null,
+      price_usd: Number(edit.price_usd ?? 0),
+      compare_at_usd: edit.compare_at_usd ? Number(edit.compare_at_usd) : null,
+      image_url: edit.image_url ?? null,
+      gallery: edit.gallery ?? [],
+      model_url: edit.model_url ?? null,
+      metal: edit.metal ?? "18k_gold",
+      gemstone: edit.gemstone ?? null,
+      stock: Number(edit.stock ?? 0),
+      is_active: edit.is_active ?? true,
+      is_featured: !!edit.is_featured,
+      category_id: edit.category_id ?? null,
+      created_at: edit.created_at ?? new Date().toISOString(),
+    };
+    try {
+      await adminUpsertProductFn({ data: payload });
+    } catch (e) {
+      setBusy(false);
+      return void toast.error((e as Error).message);
+    }
     setBusy(false);
-    if (error) return void toast.error(error.message);
+    markChanged();
     toast.success("Product saved");
     setEdit(null);
     qc.invalidateQueries();
   }
   async function del(id: string) {
     if (!confirm("Delete this product?")) return;
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) return void toast.error(error.message);
+    try {
+      await adminDeleteProductFn({ data: { id } });
+    } catch (e) {
+      return void toast.error((e as Error).message);
+    }
+    markChanged();
     qc.invalidateQueries();
   }
   async function upload(file: File | undefined, field: "image_url" | "model_url") {
@@ -155,7 +290,7 @@ function ProductsAdmin() {
     try {
       const url = await uploadMedia(file, field === "image_url" ? "products" : "models");
       setEdit((e) => ({ ...e, [field]: url }));
-      toast.success(field === "model_url" ? "3D model uploaded — save the product to publish it" : "Uploaded");
+      toast.success("Uploaded to GitHub — save the product to use it");
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -163,7 +298,7 @@ function ProductsAdmin() {
 
   return (
     <>
-      <div className="mb-6 flex justify-between"><p className="text-muted-foreground">{products.length} products</p><Button variant="luxe" onClick={() => setEdit({ metal: "18k_gold", is_active: true, stock: 1, model_kind: "diamond" })}><Plus /> New product</Button></div>
+      <div className="mb-6 flex justify-between"><p className="text-muted-foreground">{products.length} products</p><Button variant="luxe" onClick={() => setEdit({ metal: "18k_gold", is_active: true, stock: 1 })}><Plus /> New product</Button></div>
       <div className="overflow-hidden rounded-2xl border">
         {products.map((p) => (
           <div key={p.id} className="flex items-center gap-4 border-b p-3 last:border-0">
@@ -181,8 +316,10 @@ function ProductsAdmin() {
           <DialogHeader><DialogTitle className="font-display text-3xl font-normal">{edit?.id ? "Edit product" : "New product"}</DialogTitle></DialogHeader>
           {edit && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <F label="Name"><Input value={edit.name ?? ""} onChange={(e) => setEdit({ ...edit, name: e.target.value, slug: edit.id ? (edit.slug ?? "") : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} /></F>
+              <F label="Name"><Input value={edit.name_en ?? ""} onChange={(e) => setEdit({ ...edit, name_en: e.target.value, slug: edit.id ? (edit.slug ?? "") : e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") })} /></F>
               <F label="Slug"><Input value={edit.slug ?? ""} onChange={(e) => setEdit({ ...edit, slug: e.target.value })} /></F>
+              <F label="Name (Arabic)"><Input dir="rtl" value={edit.name_ar ?? ""} onChange={(e) => setEdit({ ...edit, name_ar: e.target.value })} /></F>
+              <F label="Name (French)"><Input value={edit.name_fr ?? ""} onChange={(e) => setEdit({ ...edit, name_fr: e.target.value })} /></F>
               <F label="Category">
                 <select value={edit.category_id ?? ""} onChange={(e) => setEdit({ ...edit, category_id: e.target.value || null })} className="h-9 w-full rounded-md border bg-card px-2 text-sm">
                   <option value="">—</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -197,7 +334,7 @@ function ProductsAdmin() {
               <F label="Stock"><Input type="number" value={edit.stock ?? 0} onChange={(e) => setEdit({ ...edit, stock: Number(e.target.value) })} /></F>
               <F label="Price (USD)"><Input type="number" value={edit.price_usd ?? ""} onChange={(e) => setEdit({ ...edit, price_usd: Number(e.target.value) })} /></F>
               <F label="Compare-at price"><Input type="number" value={edit.compare_at_usd ?? ""} onChange={(e) => setEdit({ ...edit, compare_at_usd: e.target.value ? Number(e.target.value) : null })} /></F>
-              <div className="sm:col-span-2"><F label="Description"><Textarea value={edit.description ?? ""} onChange={(e) => setEdit({ ...edit, description: e.target.value })} /></F></div>
+              <div className="sm:col-span-2"><F label="Description"><Textarea value={edit.description_en ?? ""} onChange={(e) => setEdit({ ...edit, description_en: e.target.value })} /></F></div>
               <F label="Product image">
                 <UploadBtn accept="image/*" onFile={(f) => upload(f, "image_url")} label={edit.image_url ? "Replace image" : "Upload image"} />
                 {edit.image_url && <img src={edit.image_url} alt="" className="mt-2 size-20 rounded-md object-cover" />}
@@ -205,7 +342,7 @@ function ProductsAdmin() {
               <F label="3D model (.glb / .gltf)">
                 <UploadBtn accept=".glb,.gltf,model/gltf-binary" onFile={(f) => upload(f, "model_url")} label={edit.model_url ? "Replace model" : "Upload model"} />
                 {edit.model_url && <div className="mt-2 flex items-center gap-3 text-xs"><span className="text-gold">3D model attached</span><button type="button" className="text-muted-foreground underline" onClick={() => setEdit({ ...edit, model_url: null })}>Remove</button></div>}
-                <p className="mt-1 text-[0.65rem] text-muted-foreground">Use a single .glb file (textures embedded), max 50 MB.</p>
+                <p className="mt-1 text-[0.65rem] text-muted-foreground">Use a single .glb file, max 25 MB.</p>
               </F>
               <label className="flex items-center gap-3 text-sm"><Switch checked={!!edit.is_featured} onCheckedChange={(v) => setEdit({ ...edit, is_featured: v })} /> Featured</label>
               <label className="flex items-center gap-3 text-sm"><Switch checked={edit.is_active ?? true} onCheckedChange={(v) => setEdit({ ...edit, is_active: v })} /> Visible in store</label>
@@ -221,19 +358,33 @@ function ProductsAdmin() {
 // ---------------- Banners ----------------
 function BannersAdmin() {
   const qc = useQueryClient();
-  const { data: banners = [] } = useQuery({ queryKey: ["admin-banners"], queryFn: async () => (await supabase.from("banners").select("*").order("sort_order")).data ?? [] });
-  type B = Partial<Database["public"]["Tables"]["banners"]["Insert"]>;
-  const [edit, setEdit] = useState<B | null>(null);
+  const { data: banners = [] } = useQuery({ queryKey: ["admin-banners"], queryFn: () => adminListBannersFn() });
+  const [edit, setEdit] = useState<Partial<Banner> | null>(null);
   async function save() {
     if (!edit?.title) return void toast.error("Title is required");
-    const { error } = edit.id ? await supabase.from("banners").update(edit).eq("id", edit.id) : await supabase.from("banners").insert(edit as Database["public"]["Tables"]["banners"]["Insert"]);
-    if (error) return void toast.error(error.message);
+    const b: Banner = {
+      id: edit.id ?? "",
+      title: edit.title,
+      subtitle: edit.subtitle ?? null,
+      image_url: edit.image_url ?? null,
+      cta_label: edit.cta_label ?? null,
+      cta_href: edit.cta_href ?? null,
+      is_active: edit.is_active ?? true,
+      sort_order: edit.sort_order ?? 0,
+    };
+    try {
+      await adminUpsertBannerFn({ data: b });
+    } catch (e) {
+      return void toast.error((e as Error).message);
+    }
+    markChanged();
     setEdit(null);
     qc.invalidateQueries();
     toast.success("Banner saved");
   }
   async function del(id: string) {
-    await supabase.from("banners").delete().eq("id", id);
+    await adminDeleteBannerFn({ data: { id } });
+    markChanged();
     qc.invalidateQueries();
   }
   return (
@@ -242,10 +393,8 @@ function BannersAdmin() {
       <div className="grid gap-4 md:grid-cols-2">
         {banners.map((b) => (
           <div key={b.id} className="glass rounded-2xl p-5">
-            <p className="eyebrow">{b.eyebrow}</p>
-            <p className="mt-2 font-display text-2xl">{b.title}</p>
+            <p className="font-display text-2xl">{b.title}</p>
             <p className="text-sm text-muted-foreground">{b.subtitle}</p>
-            {b.countdown_ends_at && <p className="mt-2 text-xs text-gold">Countdown to {new Date(b.countdown_ends_at).toLocaleString()}</p>}
             <div className="mt-4 flex gap-2">
               <Button size="sm" variant="ghostGold" onClick={() => setEdit(b)}>Edit</Button>
               <Button size="sm" variant="ghost" onClick={() => del(b.id)}>Delete</Button>
@@ -259,14 +408,13 @@ function BannersAdmin() {
           <DialogHeader><DialogTitle className="font-display text-3xl font-normal">Hero banner</DialogTitle></DialogHeader>
           {edit && (
             <div className="grid gap-4">
-              <F label="Eyebrow"><Input value={edit.eyebrow ?? ""} onChange={(e) => setEdit({ ...edit, eyebrow: e.target.value })} /></F>
               <F label="Title"><Input value={edit.title ?? ""} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></F>
               <F label="Subtitle"><Textarea value={edit.subtitle ?? ""} onChange={(e) => setEdit({ ...edit, subtitle: e.target.value })} /></F>
               <div className="grid grid-cols-2 gap-4">
                 <F label="Button label"><Input value={edit.cta_label ?? ""} onChange={(e) => setEdit({ ...edit, cta_label: e.target.value })} /></F>
                 <F label="Button link"><Input value={edit.cta_href ?? ""} onChange={(e) => setEdit({ ...edit, cta_href: e.target.value })} /></F>
               </div>
-              <F label="Countdown ends (optional)"><Input type="datetime-local" value={edit.countdown_ends_at ? edit.countdown_ends_at.slice(0, 16) : ""} onChange={(e) => setEdit({ ...edit, countdown_ends_at: e.target.value ? new Date(e.target.value).toISOString() : null })} /></F>
+              <F label="Order"><Input type="number" value={edit.sort_order ?? 0} onChange={(e) => setEdit({ ...edit, sort_order: Number(e.target.value) })} /></F>
               <F label="Background image">
                 <UploadBtn accept="image/*" label="Upload image" onFile={async (f) => { try { const url = await uploadMedia(f, "banners"); setEdit((x) => ({ ...x, image_url: url })); } catch (e) { toast.error((e as Error).message); } }} />
                 {edit.image_url && <img src={edit.image_url} alt="" className="mt-2 h-20 rounded-md object-cover" />}
@@ -284,24 +432,36 @@ function BannersAdmin() {
 // ---------------- Promotions ----------------
 function PromosAdmin() {
   const qc = useQueryClient();
-  const { data: promos = [] } = useQuery({ queryKey: ["admin-promos"], queryFn: async () => (await supabase.from("promotions").select("*").order("created_at", { ascending: false })).data ?? [] });
-  const [f, setF] = useState({ code: "", discount_type: "PERCENTAGE" as Database["public"]["Enums"]["discount_type"], value: 10, min_order_usd: 0, starts_at: "", ends_at: "" });
+  const { data: promos = [] } = useQuery({ queryKey: ["admin-promos"], queryFn: () => adminListPromosFn() });
+  const [f, setF] = useState({ code: "", discount_type: "PERCENTAGE" as Promotion["discount_type"], value: 10, min_order_usd: 0, starts_at: "", ends_at: "" });
   async function create() {
     if (!f.code) return void toast.error("Enter a code");
-    const { error } = await supabase.from("promotions").insert({
-      code: f.code.toUpperCase(), discount_type: f.discount_type, value: f.value, min_order_usd: f.min_order_usd,
-      starts_at: f.starts_at ? new Date(f.starts_at).toISOString() : null, ends_at: f.ends_at ? new Date(f.ends_at).toISOString() : null,
-    });
-    if (error) return void toast.error(error.message);
+    try {
+      await adminCreatePromoFn({
+        data: {
+          code: f.code.toUpperCase(),
+          discount_type: f.discount_type,
+          value: f.value,
+          min_order_usd: f.min_order_usd,
+          starts_at: f.starts_at ? new Date(f.starts_at).toISOString() : null,
+          ends_at: f.ends_at ? new Date(f.ends_at).toISOString() : null,
+        },
+      });
+    } catch (e) {
+      return void toast.error((e as Error).message);
+    }
+    markChanged();
     setF({ ...f, code: "" });
     qc.invalidateQueries({ queryKey: ["admin-promos"] });
   }
   async function toggle(id: string, is_active: boolean) {
-    await supabase.from("promotions").update({ is_active }).eq("id", id);
+    await adminTogglePromoFn({ data: { id, is_active } });
+    markChanged();
     qc.invalidateQueries({ queryKey: ["admin-promos"] });
   }
   async function del(id: string) {
-    await supabase.from("promotions").delete().eq("id", id);
+    await adminDeletePromoFn({ data: { id } });
+    markChanged();
     qc.invalidateQueries({ queryKey: ["admin-promos"] });
   }
   return (
@@ -340,16 +500,20 @@ function PromosAdmin() {
 // ---------------- Settings ----------------
 function SettingsAdmin() {
   const qc = useQueryClient();
-  const { data } = useQuery({ queryKey: ["settings"], queryFn: async () => (await supabase.from("site_settings").select("*").eq("id", 1).maybeSingle()).data });
-  const [s, setS] = useState<Database["public"]["Tables"]["site_settings"]["Row"] | null>(null);
-  useEffect(() => { if (data) setS(data); }, [data]);
+  const { data } = useQuery({ queryKey: ["settings"], queryFn: () => getSettingsFn() as Promise<SiteSettings> });
+  const [s, setS] = useState<SiteSettings | null>(null);
+  useEffect(() => {
+    if (data) setS(data);
+  }, [data]);
   if (!s) return null;
-  const fees = s.delivery_fees as Record<string, number>;
+  const fees = s.delivery_fees ?? {};
   async function save() {
-    const { id, updated_at, ...rest } = s!;
-    void updated_at;
-    const { error } = await supabase.from("site_settings").update(rest).eq("id", id);
-    if (error) return void toast.error(error.message);
+    try {
+      await adminUpdateSettingsFn({ data: s! });
+    } catch (e) {
+      return void toast.error((e as Error).message);
+    }
+    markChanged();
     toast.success("Settings saved");
     qc.invalidateQueries({ queryKey: ["settings"] });
   }
@@ -374,9 +538,7 @@ function SettingsAdmin() {
             <F key={zone} label={`${zone} (USD)`}><Input type="number" value={fee} onChange={(e) => setS({ ...s, delivery_fees: { ...fees, [zone]: Number(e.target.value) } })} /></F>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <F label="USD → LBP rate"><Input type="number" value={s.lbp_rate} onChange={(e) => setS({ ...s, lbp_rate: Number(e.target.value) })} /></F>
-        </div>
+        <F label="USD → LBP rate"><Input type="number" value={s.lbp_rate} onChange={(e) => setS({ ...s, lbp_rate: Number(e.target.value) })} /></F>
         <label className="flex items-center gap-3 text-sm"><Switch checked={s.cod_enabled !== false} onCheckedChange={(v) => setS({ ...s, cod_enabled: v })} /> Cash on delivery</label>
         <label className="flex items-center gap-3 text-sm"><Switch checked={s.pickup_enabled !== false} onCheckedChange={(v) => setS({ ...s, pickup_enabled: v })} /> Store pickup</label>
       </section>
