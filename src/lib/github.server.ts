@@ -30,7 +30,7 @@ export async function githubStatus() {
   const token = await readEnv("GITHUB_TOKEN");
   const repo = await readEnv("GITHUB_REPO");
   const hook = await readEnv("DEPLOY_HOOK_URL");
-  return { github: !!(token && repo), repo: repo ?? null, deployHook: !!hook };
+  return { github: !!(token && repo), repo: repo ?? null, deployHook: !!hook && /^https:\/\//.test(hook) };
 }
 
 async function gh(path: string, init: RequestInit = {}) {

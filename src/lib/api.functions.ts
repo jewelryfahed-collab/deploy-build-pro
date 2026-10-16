@@ -287,7 +287,7 @@ export const publishFn = createServerFn({ method: "POST" }).handler(async () => 
   }
   const hook = await envValue("DEPLOY_HOOK_URL");
   let deployed = false;
-  if (hook) {
+  if (hook && /^https:\/\//.test(hook)) {
     const res = await fetch(hook, { method: "POST" });
     if (!res.ok) throw new Error(`Deploy hook failed [${res.status}]: ${await res.text()}`);
     deployed = true;
