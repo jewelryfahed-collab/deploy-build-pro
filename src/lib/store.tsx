@@ -4,11 +4,19 @@ import heroImg from "@/assets/hero.jpg";
 import earringsImg from "@/assets/earrings.jpg";
 import necklaceImg from "@/assets/necklace.jpg";
 import braceletImg from "@/assets/bracelet.jpg";
-import { getBannersFn, getCategoriesFn, getProductsFn, getSessionFn, getSettingsFn } from "./api.functions";
+import { getBannersFn, getCategoriesFn, getProductsFn, getSessionFn, getSettingsFn, validatePromoFn } from "./api.functions";
 import type { Category, Lang, Metal, Product, SessionUser, SiteSettings } from "./types";
 
 export type { Category, Product, SessionUser, SiteSettings } from "./types";
-export type { Metal } from "./types";
+export type { Metal, PromoResult } from "./types";
+
+export async function validatePromo(code: string, subtotal: number) {
+  try {
+    return await validatePromoFn({ data: { code, subtotal } });
+  } catch {
+    return null;
+  }
+}
 
 /** Fallback business constants, used when settings haven't loaded. */
 export const BUSINESS = {

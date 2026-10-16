@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Check, CheckCircle2, Gem, Lock, MessageCircle, ShieldCheck, Store, Tag, Truck, X } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { placeOrderFn } from "@/lib/api.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -100,26 +100,30 @@ function Checkout() {
       return;
     }
     setBusy(true);
-    const { data: u } = await supabase.auth.getUser();
-    const id = crypto.randomUUID();
-    const { error } = await supabase.from("orders").insert({
-      id,
-      user_id: u.user?.id ?? null,
-      customer_name: parsed.data.customer_name,
-      phone: parsed.data.phone,
-      governorate: parsed.data.governorate,
-      district: parsed.data.district || null,
-      address: parsed.data.address || null,
-      notes: parsed.data.notes || null,
-      fulfillment,
-      payment_method: fulfillment === "pickup" ? "pay_at_store" : "cod",
-      items: items.map((i) => ({ id: i.id, name: i.name, metal: i.metal, qty: i.qty, price: i.price })),
-      subtotal_usd: subtotal,
-      discount_usd: discount,
-      delivery_usd: fee,
-      total_usd: total,
-      promo_code: promo?.code ?? null,
-    });
+    let id = "";
+    let error = false;
+    try {
+      const r = await placeOrderFn({
+        data: {
+          customer_name: parsed.data.customer_name,
+          phone: parsed.data.phone,
+          governorate: parsed.data.governorate,
+          district: parsed.data.district || undefined,
+          address: parsed.data.address || undefined,
+          notes: parsed.data.notes || undefined,
+          fulfillment,
+          items: items.map((i) => ({ id: i.id, name: i.name, metal: i.metal, qty: i.qty, price: i.price })),
+          subtotal_usd: subtotal,
+          discount_usd: discount,
+          delivery_usd: fee,
+          total_usd: total,
+          promo_code: promo?.code ?? null,
+        },
+      });
+      id = r.id;
+    } catch {
+      error = true;
+    }
     setBusy(false);
     if (error) return void toast.error("We couldn't place your order. Please try again.");
     setDone({ id: id.slice(0, 8).toUpperCase(), total, name: parsed.data.customer_name.split(" ")[0], fulfillment });
