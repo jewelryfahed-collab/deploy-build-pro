@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-10-17T07:04:12.230Z",
+  "exported_at": "2026-10-17T07:05:16.841Z",
   "products": [
     {
       "id": "00bb0b23-2c24-4050-bfa7-2cf35b308fdd",
@@ -13,7 +13,7 @@
       "description_fr": null,
       "price_usd": 34,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/81edb91a-ade4-4931-b4a4-9f7544bb586b/men-symbol-leather-bracelet.jpg",
+      "image_url": "https://raw.githubusercontent.com/jewelryfahed-collab/deploy-build-pro/main/public/media/products/e0bdc02a-5835.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
