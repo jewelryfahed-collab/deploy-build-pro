@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MapPin, MessageCircle, Phone, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BUSINESS, settingsQuery, usd } from "@/lib/store";
-import earringsImg from "@/assets/earrings.jpg";
+import earringsImg from "@/assets/earrings.webp";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({

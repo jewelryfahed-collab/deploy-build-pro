@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import heroImg from "@/assets/hero.jpg";
-import braceletImg from "@/assets/bracelet.jpg";
+import heroImg from "@/assets/hero.webp";
+import braceletImg from "@/assets/bracelet.webp";
 import type { Banner } from "@/lib/store";
 
 const FALLBACKS = [heroImg, braceletImg];
@@ -51,7 +51,9 @@ export function HeroSlider({ banners }: { banners: Banner[] }) {
         <motion.img
           key={b?.id ?? "fallback"}
           src={b?.image_url || FALLBACKS[i % FALLBACKS.length]}
-          alt=""
+          alt={b?.title ?? "Fahed Jewelry"}
+          fetchPriority={i === 0 ? "high" : "auto"}
+          decoding="async"
           width={1600}
           height={1008}
           initial={{ opacity: 0, scale: 1.08 }}

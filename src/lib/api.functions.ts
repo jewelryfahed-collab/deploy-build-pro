@@ -30,6 +30,8 @@ import { categorySchema, productSchema, cleanBusinessPhone } from "./catalog";
 import type { Category, Banner, Lang, Order, OrderItem, Product, PromoResult, Promotion, SessionUser, SiteSettings } from "./types";
 import { envValue, githubStatus, putFile, textToBase64 } from "./github.server";
 
+function fastPhoto(url: string | null) { return url?.startsWith("/products/") ? url.replace(/\.jpg$/, ".webp") : url; }
+
 // Localize name/description fields for the requested language.
 function localize<T extends { name_en: string; name_ar: string | null; name_fr: string | null; description_en?: string | null; description_ar?: string | null; description_fr?: string | null }>(
   item: T,
@@ -54,15 +56,15 @@ export const getProductsFn = createServerFn({ method: "GET" })
     return products.map((p) => {
       const loc = localize(p, lang);
       const cat = cats.find((c) => c.id === p.category_id);
-      return { ...loc, categories: cat ? { slug: cat.slug, name: localize(cat, lang).name } : null };
+      return { ...loc, image_url: fastPhoto(p.image_url), gallery: p.gallery.map((g) => fastPhoto(g) ?? g), categories: cat ? { slug: cat.slug, name: localize(cat, lang).name } : null };
     });
   });
 
 export const getCategoriesFn = createServerFn({ method: "GET" })
   .inputValidator((lang?: Lang) => lang ?? "en")
-  .handler(async ({ data: lang }) => (await listCategories()).map((c) => localize(c, lang)));
+  .handler(async ({ data: lang }) => (await listCategories()).map((c) => ({ ...localize(c, lang), image_url: fastPhoto(c.image_url) })));
 
-export const getBannersFn = createServerFn({ method: "GET" }).handler(() => listBanners());
+export const getBannersFn = createServerFn({ method: "GET" }).handler(async () => (await listBanners()).map((b) => ({ ...b, image_url: fastPhoto(b.image_url) })));
 export const getSettingsFn = createServerFn({ method: "GET" }).handler(async () => {
   const s = await getSettings();
   return { ...s, phone_primary: cleanBusinessPhone(s.phone_primary), phone_secondary: cleanBusinessPhone(s.phone_secondary), whatsapp: cleanBusinessPhone(s.whatsapp) || "96178859562" };
@@ -162,7 +164,7 @@ export const adminListProductsFn = createServerFn({ method: "GET" }).handler(asy
   const cats = await listCategories();
   return (await listProducts(false)).map((p) => {
     const c = cats.find((c) => c.id === p.category_id);
-    return { ...p, categories: c ? { slug: c.slug, name: c.name_en } : null };
+    return { ...p, image_url: fastPhoto(p.image_url), categories: c ? { slug: c.slug, name: c.name_en } : null };
   });
 });
 export const adminUpsertCategoryFn = createServerFn({ method: "POST" })

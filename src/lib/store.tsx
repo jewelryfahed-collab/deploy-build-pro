@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { queryOptions } from "@tanstack/react-query";
-import heroImg from "@/assets/hero.jpg";
-import earringsImg from "@/assets/earrings.jpg";
-import necklaceImg from "@/assets/necklace.jpg";
-import braceletImg from "@/assets/bracelet.jpg";
+import heroImg from "@/assets/hero.webp";
+import earringsImg from "@/assets/earrings.webp";
+import necklaceImg from "@/assets/necklace.webp";
+import braceletImg from "@/assets/bracelet.webp";
 import { getBannersFn, getCategoriesFn, getProductsFn, getSessionFn, getSettingsFn, validatePromoFn } from "./api.functions";
 import type { Category, Lang, Metal, Product, SessionUser, SiteSettings } from "./types";
 

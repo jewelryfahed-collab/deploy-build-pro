@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, MessageCircle, Phone } from "lucide-react";
-import logoImg from "@/assets/logo.jpg";
+import logoImg from "@/assets/logo.webp";
 const logo = { url: logoImg };
 import { BUSINESS, settingsQuery } from "@/lib/store";
 

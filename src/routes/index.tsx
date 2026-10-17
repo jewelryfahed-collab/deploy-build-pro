@@ -6,7 +6,7 @@ import { HeroSlider } from "@/components/site/HeroSlider";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
 import { bannersQuery, categoriesQuery, categoryImage, productsQuery } from "@/lib/store";
-import necklaceImg from "@/assets/necklace.jpg";
+import necklaceImg from "@/assets/necklace.webp";
 
 export const Route = createFileRoute("/")({
   head: () => ({
