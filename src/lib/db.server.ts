@@ -208,6 +208,34 @@ export async function listCategories(): Promise<Category[]> {
   return results.map(mapCategory);
 }
 
+export async function upsertCategory(c: Category): Promise<void> {
+  const db = await getD1();
+  if (!db) {
+    const m = getMemory();
+    const i = m.categories.findIndex((x) => x.id === c.id);
+    if (i >= 0) m.categories[i] = c; else m.categories.push(c);
+    m.categories.sort((a, b) => a.sort_order - b.sort_order);
+    return;
+  }
+  await ensureSchema(db);
+  await db.prepare(`INSERT INTO categories (id, slug, name_en, name_ar, name_fr, description, image_url, sort_order) VALUES (?,?,?,?,?,?,?,?)
+    ON CONFLICT(id) DO UPDATE SET slug=excluded.slug, name_en=excluded.name_en, name_ar=excluded.name_ar, name_fr=excluded.name_fr, description=excluded.description, image_url=excluded.image_url, sort_order=excluded.sort_order`).bind(c.id, c.slug, c.name_en, c.name_ar, c.name_fr, c.description, c.image_url, c.sort_order).run();
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const db = await getD1();
+  if (!db) {
+    const m = getMemory();
+    if (m.products.some((p) => p.category_id === id)) throw new Error("Move products to another category before deleting this category.");
+    m.categories = m.categories.filter((c) => c.id !== id);
+    return;
+  }
+  await ensureSchema(db);
+  const assigned = await db.prepare("SELECT COUNT(*) AS n FROM products WHERE category_id = ?").bind(id).first<{ n: number }>();
+  if (assigned?.n) throw new Error("Move products to another category before deleting this category.");
+  await db.prepare("DELETE FROM categories WHERE id = ?").bind(id).run();
+}
+
 export async function listBanners(): Promise<Banner[]> {
   const db = await getD1();
   if (!db) return getMemory().banners.filter((b) => b.is_active);
