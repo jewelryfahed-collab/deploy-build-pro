@@ -93,9 +93,9 @@ function PublishBar() {
   const qc = useQueryClient();
   const { data: status } = useQuery({ queryKey: ["publish-status"], queryFn: () => publishStatusFn() });
   const [busy, setBusy] = useState(false);
-  async function save() {
+  async function refresh() {
     await qc.invalidateQueries();
-    toast.success("Saved. Press Done when you're ready to publish.");
+    toast.success("Refreshed. Each section saves to the database as soon as you click its own Save button.");
   }
   async function done() {
     setBusy(true);
@@ -130,8 +130,8 @@ function PublishBar() {
           {status && !status.deployHook ? " · no deploy hook set" : ""}
         </p>
       </div>
-      <Button variant="ghostGold" onClick={save}>
-        <Save /> Save
+      <Button variant="ghostGold" onClick={refresh}>
+        <Save /> Refresh
       </Button>
       <Button variant="luxe" onClick={done} disabled={busy}>
         <CheckCircle2 /> {busy ? "Publishing…" : "Done"}
