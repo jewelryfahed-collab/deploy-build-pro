@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-10-17T12:55:04.220Z",
+  "exported_at": "2026-10-17T13:02:19.726Z",
   "products": [
     {
       "id": "00bb0b23-2c24-4050-bfa7-2cf35b308fdd",
@@ -103,7 +103,7 @@
       "description_fr": null,
       "price_usd": 130,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/3832f616-efde-420a-ac40-d08d5c9da031/love-you-mom-heart-necklace.jpg",
+      "image_url": "/media/products/aadecb4c-Gemini_Generated_Image_d5odlcd5odlcd5od.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -133,7 +133,7 @@
       "description_fr": null,
       "price_usd": 28,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/89fe7a8e-b7d0-4d4c-a1e5-f2ee94d5cc4b/baby-pin-brooch.jpg",
+      "image_url": "/media/products/97f76ebf-Gemini_Generated_Image_85bepx85bepx85be.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -163,7 +163,7 @@
       "description_fr": null,
       "price_usd": 23,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/0fc03120-b73e-4e1a-af01-b6c5df11688b/initial-cord-bracelet.jpg",
+      "image_url": "/media/products/07471c5f-Gemini_Generated_Image_ngr0gvngr0gvngr0.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -823,7 +823,7 @@
       "description_fr": null,
       "price_usd": 30,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/73c2a6cb-b760-4086-96dd-0a717fe4bcad/black-cord-symbol-bracelet.jpg",
+      "image_url": "/media/products/d5505619-Gemini_Generated_Image_k7u9ssk7u9ssk7u9.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -853,7 +853,7 @@
       "description_fr": null,
       "price_usd": 34,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/bf9cb4b3-a6ea-4850-8e19-de33a7e9559a/heart-black-bead-necklace.jpg",
+      "image_url": "/media/products/cc9b8ec1-Gemini_Generated_Image_oar4i1oar4i1oar4.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -883,7 +883,7 @@
       "description_fr": null,
       "price_usd": 39,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/3c987f9c-4ec4-45a3-8b51-b2c6030b812d/gold-letter-pendant.jpg",
+      "image_url": "/media/products/452e9f5a-Gemini_Generated_Image_qns0pbqns0pbqns0.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -899,36 +899,6 @@
       "categories": {
         "slug": "pendants",
         "name": "pendants"
-      }
-    },
-    {
-      "id": "prod-double-pearl-necklace",
-      "slug": "double-pearl-necklace",
-      "category_id": "cat-necklaces",
-      "name_en": "Double Pearl Strand Necklaces",
-      "name_ar": "قلادة لؤلؤ مزدوجة",
-      "name_fr": "Collier double rang de perles",
-      "description_en": "Two strands of lustrous freshwater pearls finished with an 18K gold clasp.",
-      "description_ar": null,
-      "description_fr": null,
-      "price_usd": 420,
-      "compare_at_usd": null,
-      "image_url": "/products/double-pearl-necklace.webp",
-      "gallery": [],
-      "model_url": null,
-      "metal": "18k_gold",
-      "gemstone": "Pearl",
-      "stock": 5,
-      "is_active": true,
-      "is_featured": true,
-      "created_at": "2026-10-16T14:14:19.939Z",
-      "cat_slug": "necklaces",
-      "cat_name": "Necklaces",
-      "name": "Double Pearl Strand Necklaces",
-      "description": "Two strands of lustrous freshwater pearls finished with an 18K gold clasp.",
-      "categories": {
-        "slug": "necklaces",
-        "name": "Necklaces"
       }
     }
   ],
