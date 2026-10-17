@@ -90,9 +90,9 @@ export const SEED_SETTINGS: SiteSettings = {
   id: 1,
   brand: "Fahed Jewelry Manufacturing",
   address: "Keserwan - Faitroun, Mount Lebanon, Lebanon",
-  phone_primary: "+961 03 859 562",
-  phone_secondary: "+961 78 859 562",
-  whatsapp: "96103859562",
+  phone_primary: "+961 78 859 562",
+  phone_secondary: "",
+  whatsapp: "96178859562",
   lbp_rate: 89500,
   delivery_fees: { Keserwan: 3, "Greater Beirut": 4, "Mount Lebanon": 5, North: 6, South: 6, Bekaa: 7 },
 };

@@ -15,6 +15,8 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/checkout")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Checkout — Fahed Jewelry Manufacturing" },
       { name: "description", content: "Secure checkout with delivery across Lebanon, cash on delivery or store pickup." },
       { name: "robots", content: "noindex" },

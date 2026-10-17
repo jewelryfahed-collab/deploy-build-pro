@@ -22,8 +22,8 @@ export async function validatePromo(code: string, subtotal: number) {
 export const BUSINESS = {
   brand: "Fahed Jewelry Manufacturing",
   address: "Keserwan - Faitroun, Mount Lebanon, Lebanon",
-  phones: ["+961 03 859 562", "+961 78 859 562"],
-  whatsapp: "96103859562",
+  phones: ["+961 78 859 562"],
+  whatsapp: "96178859562",
   governorates: ["Keserwan", "Greater Beirut", "Mount Lebanon", "North", "South", "Bekaa"],
 };
 
@@ -62,19 +62,23 @@ export function currentLang(): Lang {
 // ---------- Queries ----------
 export const productsQuery = () =>
   queryOptions({
+    staleTime: 60_000,
     queryKey: ["products", currentLang()],
     queryFn: () => getProductsFn({ data: currentLang() }) as Promise<Product[]>,
   });
 export const categoriesQuery = () =>
   queryOptions({
+    staleTime: 60_000,
     queryKey: ["categories", currentLang()],
     queryFn: () => getCategoriesFn({ data: currentLang() }) as Promise<Category[]>,
   });
 export const bannersQuery = queryOptions({
+  staleTime: 60_000,
   queryKey: ["banners"],
   queryFn: () => getBannersFn(),
 });
 export const settingsQuery = queryOptions({
+  staleTime: 60_000,
   queryKey: ["settings"],
   queryFn: () => getSettingsFn() as Promise<SiteSettings>,
 });

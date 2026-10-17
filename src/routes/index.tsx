@@ -11,6 +11,8 @@ import necklaceImg from "@/assets/necklace.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Fahed Jewelry Manufacturing — Fine Jewelry from Faitroun, Lebanon" },
       { name: "description", content: "Handcrafted 18K gold, platinum, silver and diamond jewelry from Keserwan. Explore bridal and bespoke pieces." },
       { property: "og:title", content: "Fahed Jewelry Manufacturing" },

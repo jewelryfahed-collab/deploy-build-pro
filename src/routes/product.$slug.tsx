@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { ShieldCheck, Truck, MessageCircle } from "lucide-react";
-import { JewelryViewer } from "@/components/jewelry/JewelryViewer";
 import { ProductCard } from "@/components/site/ProductCard";
 import { Button } from "@/components/ui/button";
 import { BUSINESS, lbp, metalLabel, productImage, productsQuery, settingsQuery, useCart, usd } from "@/lib/store";
@@ -12,8 +11,10 @@ export const Route = createFileRoute("/product/$slug")({
     const name = params.slug.split("-").map((w) => w[0]?.toUpperCase() + w.slice(1)).join(" ");
     return {
       meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
         { title: `${name} — Fahed Jewelry Manufacturing` },
-        { name: "description", content: `${name}, handcrafted in Faitroun, Lebanon. View it in 360° 3D.` },
+        { name: "description", content: `${name}, handcrafted in Faitroun, Lebanon. Explore product photos and details.` },
         { property: "og:title", content: `${name} — Fahed Jewelry` },
         { property: "og:description", content: "Handcrafted fine jewelry from Keserwan, Lebanon." },
       ],
@@ -28,7 +29,7 @@ function Gallery({ images, alt }: { images: string[]; alt: string }) {
   return (
     <div className="lg:sticky lg:top-28 lg:self-start">
       <div className="overflow-hidden rounded-2xl border bg-card">
-        <img src={current} alt={alt} className="aspect-square w-full object-cover" />
+        <img src={current} alt={alt} decoding="async" fetchPriority="high" className="aspect-square w-full object-cover" />
       </div>
       {images.length > 1 && (
         <div className="mt-4 grid grid-cols-5 gap-3">
@@ -68,7 +69,7 @@ function ProductPage() {
           <p className="eyebrow">{p.categories?.name}</p>
           <h1 className="mt-3 text-5xl sm:text-6xl">{p.name}</h1>
           <div className="mt-6 flex items-baseline gap-3">
-            <span className="font-display text-4xl text-gold">{usd(Number(p.price_usd))}</span>
+            <span className="font-display text-4xl text-gold"><span className="mr-2 text-base">Starting</span>{usd(Number(p.price_usd))}</span>
             {p.compare_at_usd && <span className="text-muted-foreground line-through">{usd(Number(p.compare_at_usd))}</span>}
           </div>
           <p className="text-xs text-muted-foreground">≈ {lbp(Number(p.price_usd), Number(settings?.lbp_rate ?? 89500))}</p>
