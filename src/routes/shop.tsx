@@ -7,12 +7,16 @@ import { ProductCard } from "@/components/site/ProductCard";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { METALS, categoriesQuery, productsQuery, usd } from "@/lib/store";
+import { Button } from "@/components/ui/button";
+import { matchesPrice } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/shop")({
   validateSearch: z.object({ category: z.string().optional() }),
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Shop Fine Jewelry — Fahed Jewelry Manufacturing" },
       { name: "description", content: "Earrings, necklaces, bracelets and bridal pieces in 18K gold, platinum, silver and diamonds." },
       { property: "og:title", content: "Shop — Fahed Jewelry" },
@@ -29,7 +33,7 @@ function Shop() {
   const { data: categories = [] } = useQuery(categoriesQuery());
   const [metals, setMetals] = useState<string[]>([]);
   const [gem, setGem] = useState<string>("");
-  const [maxPrice, setMaxPrice] = useState(5000);
+  const [maxPrice, setMaxPrice] = useState<number | null>(null);
   const [inStock, setInStock] = useState(false);
   const [sort, setSort] = useState("new");
 
@@ -40,13 +44,14 @@ function Shop() {
         (!category || p.categories?.slug === category) &&
         (!metals.length || metals.includes(p.metal)) &&
         (!gem || p.gemstone === gem) &&
-        Number(p.price_usd) <= maxPrice &&
+        matchesPrice(Number(p.price_usd), maxPrice) &&
         (!inStock || p.stock > 0),
     );
     if (sort === "low") l = [...l].sort((a, b) => Number(a.price_usd) - Number(b.price_usd));
     if (sort === "high") l = [...l].sort((a, b) => Number(b.price_usd) - Number(a.price_usd));
     return l;
   }, [products, category, metals, gem, maxPrice, inStock, sort]);
+  const priceCeiling = Math.max(5000, ...products.map((p) => Math.ceil(Number(p.price_usd) / 50) * 50));
   const active = categories.find((c) => c.slug === category);
 
   return (
@@ -79,8 +84,8 @@ function Shop() {
             </div>
           </div>
           <div>
-            <p className="mb-3 flex justify-between text-sm"><span>Max price</span><span className="text-gold">{usd(maxPrice)}</span></p>
-            <Slider value={[maxPrice]} min={200} max={5000} step={50} onValueChange={(v) => setMaxPrice(v[0] ?? 5000)} />
+            <p className="mb-3 flex justify-between text-sm"><span>Max price</span><span className="text-gold">{maxPrice === null ? "Any" : usd(maxPrice)}</span></p>
+            <Slider value={[maxPrice ?? priceCeiling]} min={0} max={priceCeiling} step={50} onValueChange={(v) => setMaxPrice(v[0] === priceCeiling ? null : v[0] ?? null)} />
           </div>
           <label className="flex items-center justify-between text-sm">In stock only <Switch checked={inStock} onCheckedChange={setInStock} /></label>
         </aside>
@@ -93,7 +98,7 @@ function Shop() {
               <option value="high">Price: high to low</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-10 xl:grid-cols-3">
+          <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-x-4 gap-y-10 xl:grid-cols-3">
             {list.map((p) => <ProductCard key={p.id} p={p} tall />)}
           </div>
           {list.length === 0 && <p className="py-20 text-center text-muted-foreground">No pieces match these filters.</p>}
@@ -105,8 +110,8 @@ function Shop() {
 
 function Chip({ on, children, onClick }: { on: boolean; children: React.ReactNode; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={cn("flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs transition", on ? "border-gold bg-gold/15 text-gold" : "text-muted-foreground hover:text-foreground")}>
+    <Button variant="ghost" onClick={onClick} className={cn("flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs transition", on ? "border-gold bg-gold/15 text-gold" : "text-muted-foreground hover:text-foreground")}>
       {children}
-    </button>
+    </Button>
   );
 }

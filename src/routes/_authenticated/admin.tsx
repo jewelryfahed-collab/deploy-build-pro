@@ -16,12 +16,12 @@ import {
   adminUpdateSettingsFn,
   adminUpsertBannerFn,
   adminUpsertProductFn,
-  getProductsFn,
+  adminListProductsFn,
   getSettingsFn,
   publishFn,
   publishStatusFn,
   signOutFn,
-  uploadMediaFn,
+
 } from "@/lib/api.functions";
 import type { Banner, OrderStatus, Promotion, SiteSettings } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,11 +32,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { METALS, categoriesQuery, metalLabel, productImage, usd, useIsAdmin, type Product } from "@/lib/store";
+import { CategoriesAdmin } from "@/components/site/CategoriesAdmin";
+import { CatalogImport } from "@/components/site/CatalogImport";
+import { uploadMedia } from "@/lib/media";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Atelier Dashboard — Fahed Jewelry Manufacturing" },
       { name: "description", content: "Manage products, banners, promotions, orders and store settings." },
       { name: "robots", content: "noindex" },
@@ -73,19 +78,6 @@ function usePending() {
     return () => void listeners.delete(setN);
   }, []);
   return n;
-}
-
-async function fileToBase64(file: File): Promise<string> {
-  const buf = new Uint8Array(await file.arrayBuffer());
-  let bin = "";
-  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-  return btoa(bin);
-}
-
-// Uploads the file to the GitHub repository and returns its public URL.
-async function uploadMedia(file: File, folder: string) {
-  const { url } = await uploadMediaFn({ data: { folder, name: file.name, base64: await fileToBase64(file) } });
-  return url;
 }
 
 function useSignOut() {
@@ -169,12 +161,13 @@ function Admin() {
       <PublishBar />
       <Tabs defaultValue="orders" className="mt-10">
         <TabsList className="glass h-auto flex-wrap rounded-full p-1">
-          {["orders", "products", "banners", "promotions", "settings"].map((t) => (
+          {["orders", "products", "categories", "banners", "promotions", "settings"].map((t) => (
             <TabsTrigger key={t} value={t} className="rounded-full px-5 capitalize data-[state=active]:bg-gold data-[state=active]:text-primary-foreground">{t}</TabsTrigger>
           ))}
         </TabsList>
         <TabsContent value="orders" className="mt-8"><OrdersBoard /></TabsContent>
         <TabsContent value="products" className="mt-8"><ProductsAdmin /></TabsContent>
+        <TabsContent value="categories" className="mt-8"><CategoriesAdmin onSaved={markChanged} /></TabsContent>
         <TabsContent value="banners" className="mt-8"><BannersAdmin /></TabsContent>
         <TabsContent value="promotions" className="mt-8"><PromosAdmin /></TabsContent>
         <TabsContent value="settings" className="mt-8"><SettingsAdmin /></TabsContent>
@@ -231,7 +224,7 @@ function ProductsAdmin() {
   const { data: categories = [] } = useQuery(categoriesQuery());
   const { data: products = [] } = useQuery({
     queryKey: ["admin-products"],
-    queryFn: async () => (await getProductsFn({ data: "en" })) as Product[],
+    queryFn: () => adminListProductsFn() as Promise<Product[]>,
   });
   const [edit, setEdit] = useState<ProductForm | null>(null);
   const [busy, setBusy] = useState(false);
@@ -287,22 +280,23 @@ function ProductsAdmin() {
   }
   async function upload(file: File | undefined, field: "image_url" | "model_url") {
     if (!file) return;
+    setBusy(true);
     try {
       const url = await uploadMedia(file, field === "image_url" ? "products" : "models");
       setEdit((e) => ({ ...e, [field]: url }));
       toast.success("Uploaded to GitHub — save the product to use it");
     } catch (err) {
       toast.error((err as Error).message);
-    }
+    } finally { setBusy(false); }
   }
 
   return (
     <>
-      <div className="mb-6 flex justify-between"><p className="text-muted-foreground">{products.length} products</p><Button variant="luxe" onClick={() => setEdit({ metal: "18k_gold", is_active: true, stock: 1 })}><Plus /> New product</Button></div>
+      <div className="mb-6 flex flex-wrap items-center gap-3"><p className="mr-auto text-muted-foreground">{products.length} products</p><CatalogImport kind="products" categories={categories} products={products} onSaved={markChanged} /><Button variant="luxe" onClick={() => setEdit({ metal: "18k_gold", is_active: true, stock: 1 })}><Plus /> New product</Button></div>
       <div className="overflow-hidden rounded-2xl border">
         {products.map((p) => (
           <div key={p.id} className="flex items-center gap-4 border-b p-3 last:border-0">
-            <img src={productImage(p)} alt="" className="size-14 rounded-lg object-cover" />
+            <img src={productImage(p)} alt="" loading="lazy" decoding="async" className="size-14 rounded-lg object-cover" />
             <div className="flex-1"><p className="font-display text-lg">{p.name}</p><p className="text-xs text-muted-foreground">{p.categories?.name} · {metalLabel(p.metal)} · stock {p.stock}{p.model_url ? " · 3D model" : ""}</p></div>
             <span className={cn("rounded-full px-2 py-0.5 text-[0.6rem] uppercase", p.is_active ? "bg-gold/15 text-gold" : "bg-muted text-muted-foreground")}>{p.is_active ? "Live" : "Hidden"}</span>
             <span className="w-20 text-right text-gold">{usd(Number(p.price_usd))}</span>
@@ -336,9 +330,11 @@ function ProductsAdmin() {
               <F label="Compare-at price"><Input type="number" value={edit.compare_at_usd ?? ""} onChange={(e) => setEdit({ ...edit, compare_at_usd: e.target.value ? Number(e.target.value) : null })} /></F>
               <div className="sm:col-span-2"><F label="Description"><Textarea value={edit.description_en ?? ""} onChange={(e) => setEdit({ ...edit, description_en: e.target.value })} /></F></div>
               <F label="Product image">
+                <Input aria-label="Product photo URL" placeholder="https://…" value={edit.image_url ?? ""} onChange={(e) => setEdit({ ...edit, image_url: e.target.value || null })} />
                 <UploadBtn accept="image/*" onFile={(f) => upload(f, "image_url")} label={edit.image_url ? "Replace image" : "Upload image"} />
                 {edit.image_url && <img src={edit.image_url} alt="" className="mt-2 size-20 rounded-md object-cover" />}
               </F>
+              <F label="Gallery photo URLs (one per line)"><Textarea value={(edit.gallery ?? []).join("\n")} onChange={(e) => setEdit({ ...edit, gallery: e.target.value.split("\n").filter(Boolean) })} /></F>
               <F label="3D model (.glb / .gltf)">
                 <UploadBtn accept=".glb,.gltf,model/gltf-binary" onFile={(f) => upload(f, "model_url")} label={edit.model_url ? "Replace model" : "Upload model"} />
                 {edit.model_url && <div className="mt-2 flex items-center gap-3 text-xs"><span className="text-gold">3D model attached</span><button type="button" className="text-muted-foreground underline" onClick={() => setEdit({ ...edit, model_url: null })}>Remove</button></div>}
@@ -502,6 +498,7 @@ function SettingsAdmin() {
   const qc = useQueryClient();
   const { data } = useQuery({ queryKey: ["settings"], queryFn: () => getSettingsFn() as Promise<SiteSettings> });
   const [s, setS] = useState<SiteSettings | null>(null);
+  const [uploading, setUploading] = useState(false);
   useEffect(() => {
     if (data) setS(data);
   }, [data]);
@@ -509,7 +506,8 @@ function SettingsAdmin() {
   const fees = s.delivery_fees ?? {};
   async function save() {
     try {
-      await adminUpdateSettingsFn({ data: s! });
+      if (!s) return;
+      await adminUpdateSettingsFn({ data: s });
     } catch (e) {
       return void toast.error((e as Error).message);
     }
@@ -521,6 +519,11 @@ function SettingsAdmin() {
     <div className="grid gap-8 lg:grid-cols-2">
       <section className="glass space-y-4 rounded-2xl p-6">
         <p className="font-display text-2xl">Business</p>
+        <F label="Store logo">
+          <Input aria-label="Logo URL" value={s.logo_url ?? ""} onChange={(e) => setS({ ...s, logo_url: e.target.value || null })} placeholder="https://…" />
+          <UploadBtn accept="image/png,image/jpeg,image/webp" label={uploading ? "Uploading…" : "Upload logo"} onFile={async (f) => { setUploading(true); try { const url = await uploadMedia(f, "branding"); setS((v) => v ? { ...v, logo_url: url } : null); toast.success("Logo uploaded — save settings to apply"); } catch (e) { toast.error(e instanceof Error ? e.message : "Upload failed"); } finally { setUploading(false); } }} />
+          {s.logo_url && <img src={s.logo_url} alt="Store logo preview" className="size-24 object-contain" />}
+        </F>
         <F label="Brand name"><Input value={s.brand} onChange={(e) => setS({ ...s, brand: e.target.value })} /></F>
         <F label="Address"><Input value={s.address} onChange={(e) => setS({ ...s, address: e.target.value })} /></F>
         <div className="grid grid-cols-2 gap-3">
@@ -542,7 +545,7 @@ function SettingsAdmin() {
         <label className="flex items-center gap-3 text-sm"><Switch checked={s.cod_enabled !== false} onCheckedChange={(v) => setS({ ...s, cod_enabled: v })} /> Cash on delivery</label>
         <label className="flex items-center gap-3 text-sm"><Switch checked={s.pickup_enabled !== false} onCheckedChange={(v) => setS({ ...s, pickup_enabled: v })} /> Store pickup</label>
       </section>
-      <Button variant="luxe" size="xl" className="lg:col-span-2" onClick={save}>Save settings</Button>
+      <Button variant="luxe" size="xl" className="lg:col-span-2" onClick={save} disabled={uploading}>Save settings</Button>
       <p className="text-xs text-muted-foreground lg:col-span-2">Preview the store: <Link to="/" className="text-gold">open homepage</Link></p>
     </div>
   );

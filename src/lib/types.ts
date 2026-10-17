@@ -57,6 +57,7 @@ export interface Banner {
 export interface SiteSettings {
   id: number;
   brand: string;
+  logo_url?: string | null;
   address: string;
   phone_primary: string;
   phone_secondary: string;

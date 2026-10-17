@@ -3,13 +3,15 @@ import { useQuery } from "@tanstack/react-query";
 import { MapPin, MessageCircle, Phone, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BUSINESS, settingsQuery, usd } from "@/lib/store";
-import earringsImg from "@/assets/earrings.jpg";
+import earringsImg from "@/assets/earrings.webp";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Atelier & Contact — Fahed Jewelry Manufacturing" },
-      { name: "description", content: "Visit our atelier in Keserwan - Faitroun, Lebanon, or call +961 03 859 562." },
+      { name: "description", content: "Visit our atelier in Keserwan - Faitroun, Lebanon, or call +961 78 859 562." },
       { property: "og:title", content: "Contact Fahed Jewelry" },
       { property: "og:description", content: "Our atelier in Faitroun, Keserwan — phone, WhatsApp and delivery zones." },
     ],
@@ -19,7 +21,7 @@ export const Route = createFileRoute("/contact")({
 
 function Contact() {
   const { data: s } = useQuery(settingsQuery);
-  const phones: string[] = [s?.phone_primary ?? BUSINESS.phones[0]!, s?.phone_secondary ?? BUSINESS.phones[1]!];
+  const phones: string[] = [s?.phone_primary ?? BUSINESS.phones[0] ?? "", s?.phone_secondary ?? ""].filter(Boolean);
   const wa = (s?.whatsapp ?? BUSINESS.whatsapp).replace(/\D/g, "");
   const fees = (s?.delivery_fees ?? {}) as Record<string, number>;
   return (

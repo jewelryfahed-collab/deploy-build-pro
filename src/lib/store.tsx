@@ -1,9 +1,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { queryOptions } from "@tanstack/react-query";
-import heroImg from "@/assets/hero.jpg";
-import earringsImg from "@/assets/earrings.jpg";
-import necklaceImg from "@/assets/necklace.jpg";
-import braceletImg from "@/assets/bracelet.jpg";
+import heroImg from "@/assets/hero.webp";
+import earringsImg from "@/assets/earrings.webp";
+import necklaceImg from "@/assets/necklace.webp";
+import braceletImg from "@/assets/bracelet.webp";
 import { getBannersFn, getCategoriesFn, getProductsFn, getSessionFn, getSettingsFn, validatePromoFn } from "./api.functions";
 import type { Category, Lang, Metal, Product, SessionUser, SiteSettings } from "./types";
 
@@ -22,8 +22,8 @@ export async function validatePromo(code: string, subtotal: number) {
 export const BUSINESS = {
   brand: "Fahed Jewelry Manufacturing",
   address: "Keserwan - Faitroun, Mount Lebanon, Lebanon",
-  phones: ["+961 03 859 562", "+961 78 859 562"],
-  whatsapp: "96103859562",
+  phones: ["+961 78 859 562"],
+  whatsapp: "96178859562",
   governorates: ["Keserwan", "Greater Beirut", "Mount Lebanon", "North", "South", "Bekaa"],
 };
 
@@ -62,19 +62,23 @@ export function currentLang(): Lang {
 // ---------- Queries ----------
 export const productsQuery = () =>
   queryOptions({
+    staleTime: 60_000,
     queryKey: ["products", currentLang()],
     queryFn: () => getProductsFn({ data: currentLang() }) as Promise<Product[]>,
   });
 export const categoriesQuery = () =>
   queryOptions({
+    staleTime: 60_000,
     queryKey: ["categories", currentLang()],
     queryFn: () => getCategoriesFn({ data: currentLang() }) as Promise<Category[]>,
   });
 export const bannersQuery = queryOptions({
+  staleTime: 60_000,
   queryKey: ["banners"],
   queryFn: () => getBannersFn(),
 });
 export const settingsQuery = queryOptions({
+  staleTime: 60_000,
   queryKey: ["settings"],
   queryFn: () => getSettingsFn() as Promise<SiteSettings>,
 });

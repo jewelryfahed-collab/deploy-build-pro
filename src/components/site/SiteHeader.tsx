@@ -2,7 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Menu, Phone, Search, ShoppingBag, User, X } from "lucide-react";
-import logoImg from "@/assets/logo.jpg";
+import logoImg from "@/assets/logo.webp";
 const logo = { url: logoImg };
 import { BUSINESS, categoriesQuery, categoryImage, productImage, productsQuery, settingsQuery, useCart, usd } from "@/lib/store";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -12,7 +12,7 @@ export function SiteHeader() {
   const { data: settings } = useQuery(settingsQuery);
   const { data: categories = [] } = useQuery(categoriesQuery());
   const [mega, setMega] = useState(false);
-  const phones: string[] = [settings?.phone_primary ?? BUSINESS.phones[0]!, settings?.phone_secondary ?? BUSINESS.phones[1]!];
+  const phones: string[] = [settings?.phone_primary ?? BUSINESS.phones[0] ?? "", settings?.phone_secondary ?? ""].filter(Boolean);
 
   return (
     <header className="sticky top-0 z-40">
@@ -32,7 +32,7 @@ export function SiteHeader() {
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4">
           <MobileNav categories={categories} />
           <Link to="/" className="flex items-center gap-3">
-            <img src={logo.url} alt="Fahed Jewelry" className="size-16 rounded-full object-cover shadow-gold ring-2 ring-gold/50" />
+            <img src={settings?.logo_url || logo.url} alt="Fahed Jewelry" className="size-16 rounded-full object-cover shadow-gold ring-2 ring-gold/50" />
             <span className="hidden leading-none sm:block">
               <span className="block font-display text-2xl tracking-wide">Fahed</span>
               <span className="eyebrow text-[0.55rem]">Jewelry Manufacturing</span>
@@ -131,7 +131,7 @@ function SearchBox() {
                 <p className="font-display text-lg">{p.name}</p>
                 <p className="text-xs text-muted-foreground">{p.categories?.name} · {p.gemstone ?? "Pure metal"}</p>
               </div>
-              <span className="pr-3 text-gold">{usd(Number(p.price_usd))}</span>
+              <span className="pr-3 text-gold">Starting {usd(Number(p.price_usd))}</span>
             </Link>
           ))}
           {q && results.length === 0 && <p className="text-muted-foreground">No pieces match "{q}".</p>}

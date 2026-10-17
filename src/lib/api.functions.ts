@@ -2,6 +2,8 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import {
+  upsertCategory,
+  deleteCategory,
   createOrder,
   createPromotion,
   createUser,
@@ -24,8 +26,11 @@ import {
   upsertProduct,
 } from "./db.server";
 import { clearSession, ensureAdmin, hashPassword, readSession, requireAdmin, setSession, verifyPassword } from "./auth.server";
-import type { Banner, Lang, Order, OrderItem, Product, PromoResult, Promotion, SessionUser, SiteSettings } from "./types";
+import { categorySchema, productSchema, cleanBusinessPhone } from "./catalog";
+import type { Category, Banner, Lang, Order, OrderItem, Product, PromoResult, Promotion, SessionUser, SiteSettings } from "./types";
 import { envValue, githubStatus, putFile, textToBase64 } from "./github.server";
+
+function fastPhoto(url: string | null) { return url?.startsWith("/products/") ? url.replace(/\.jpg$/, ".webp") : url; }
 
 // Localize name/description fields for the requested language.
 function localize<T extends { name_en: string; name_ar: string | null; name_fr: string | null; description_en?: string | null; description_ar?: string | null; description_fr?: string | null }>(
@@ -51,16 +56,19 @@ export const getProductsFn = createServerFn({ method: "GET" })
     return products.map((p) => {
       const loc = localize(p, lang);
       const cat = cats.find((c) => c.id === p.category_id);
-      return { ...loc, categories: cat ? { slug: cat.slug, name: localize(cat, lang).name } : null };
+      return { ...loc, image_url: fastPhoto(p.image_url), gallery: p.gallery.map((g) => fastPhoto(g) ?? g), categories: cat ? { slug: cat.slug, name: localize(cat, lang).name } : null };
     });
   });
 
 export const getCategoriesFn = createServerFn({ method: "GET" })
   .inputValidator((lang?: Lang) => lang ?? "en")
-  .handler(async ({ data: lang }) => (await listCategories()).map((c) => localize(c, lang)));
+  .handler(async ({ data: lang }) => (await listCategories()).map((c) => ({ ...localize(c, lang), image_url: fastPhoto(c.image_url) })));
 
-export const getBannersFn = createServerFn({ method: "GET" }).handler(() => listBanners());
-export const getSettingsFn = createServerFn({ method: "GET" }).handler(() => getSettings());
+export const getBannersFn = createServerFn({ method: "GET" }).handler(async () => (await listBanners()).map((b) => ({ ...b, image_url: fastPhoto(b.image_url) })));
+export const getSettingsFn = createServerFn({ method: "GET" }).handler(async () => {
+  const s = await getSettings();
+  return { ...s, phone_primary: cleanBusinessPhone(s.phone_primary), phone_secondary: cleanBusinessPhone(s.phone_secondary), whatsapp: cleanBusinessPhone(s.whatsapp) || "96178859562" };
+});
 
 // ---------- Auth ----------
 export const getSessionFn = createServerFn({ method: "GET" }).handler(async (): Promise<SessionUser | null> => readSession());
@@ -151,6 +159,55 @@ export const placeOrderFn = createServerFn({ method: "POST" })
   });
 
 // ---------- Admin ----------
+export const adminListProductsFn = createServerFn({ method: "GET" }).handler(async () => {
+  await requireAdmin();
+  const cats = await listCategories();
+  return (await listProducts(false)).map((p) => {
+    const c = cats.find((c) => c.id === p.category_id);
+    return { ...p, image_url: fastPhoto(p.image_url), categories: c ? { slug: c.slug, name: c.name_en } : null };
+  });
+});
+export const adminUpsertCategoryFn = createServerFn({ method: "POST" })
+  .inputValidator((d: Category) => categorySchema.parse(d))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const cats = await listCategories();
+    if (cats.some((c) => c.slug === data.slug && c.id !== data.id)) throw new Error("Category slug already exists");
+    await upsertCategory(data);
+    return { ok: true };
+  });
+export const adminDeleteCategoryFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { id: string }) => d)
+  .handler(async ({ data }) => { await requireAdmin(); await deleteCategory(data.id); return { ok: true }; });
+export const adminBulkImportFn = createServerFn({ method: "POST" })
+  .inputValidator((d: { kind: "products" | "categories"; rows: unknown[] }) => {
+    if (!Array.isArray(d.rows) || !d.rows.length || d.rows.length > 500) throw new Error("Import between 1 and 500 records at a time");
+    if (d.kind === "categories") return { kind: d.kind, rows: d.rows.map((r) => categorySchema.parse(r)) };
+    if (d.kind === "products") return { kind: d.kind, rows: d.rows.map((r) => productSchema.parse(r)) };
+    throw new Error("Invalid import type");
+  })
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const existing = data.kind === "categories" ? await listCategories() : await listProducts(false);
+    const slugs = new Set<string>();
+    const ids = new Set<string>();
+    const cats = await listCategories();
+    for (const row of data.rows) {
+      if (slugs.has(row.slug) || ids.has(row.id)) throw new Error("Duplicate slug or ID in import");
+      slugs.add(row.slug); ids.add(row.id);
+      if (existing.some((r) => (r.slug === row.slug || r.id === row.id) && !(r.slug === row.slug && r.id === row.id))) throw new Error("An imported ID or slug conflicts with an existing record");
+      if ("category_id" in row && row.category_id && !cats.some((c) => c.id === row.category_id)) throw new Error("Unknown product category");
+    }
+    let count = 0;
+    for (const row of data.rows) {
+      try {
+        if (data.kind === "categories") await upsertCategory(categorySchema.parse(row)); else await upsertProduct(productSchema.parse(row));
+        count++;
+      } catch { throw new Error(`${count} records saved before an error. Re-importing updates the same records safely.`); }
+    }
+    return { count };
+  });
+
 export const adminListOrdersFn = createServerFn({ method: "GET" }).handler(async () => {
   await requireAdmin();
   return listOrders();
@@ -165,7 +222,7 @@ export const adminSetOrderStatusFn = createServerFn({ method: "POST" })
   });
 
 export const adminUpsertProductFn = createServerFn({ method: "POST" })
-  .inputValidator((d: Product) => d)
+  .inputValidator((d: Product) => productSchema.parse(d))
   .handler(async ({ data }) => {
     await requireAdmin();
     await upsertProduct(data);

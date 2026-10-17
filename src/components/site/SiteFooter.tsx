@@ -1,19 +1,19 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, MessageCircle, Phone } from "lucide-react";
-import logoImg from "@/assets/logo.jpg";
+import logoImg from "@/assets/logo.webp";
 const logo = { url: logoImg };
 import { BUSINESS, settingsQuery } from "@/lib/store";
 
 export function SiteFooter() {
   const { data: s } = useQuery(settingsQuery);
-  const phones: string[] = [s?.phone_primary ?? BUSINESS.phones[0]!, s?.phone_secondary ?? BUSINESS.phones[1]!];
+  const phones: string[] = [s?.phone_primary ?? BUSINESS.phones[0] ?? "", s?.phone_secondary ?? ""].filter(Boolean);
   const wa = (s?.whatsapp ?? BUSINESS.whatsapp).replace(/\D/g, "");
   return (
     <footer className="mt-24 border-t bg-espresso-glow">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 md:grid-cols-4">
         <div className="md:col-span-2">
-          <img src={logo.url} alt="Fahed Jewelry Manufacturing" className="size-28 rounded-full object-cover shadow-gold ring-2 ring-gold/50" />
+          <img src={s?.logo_url || logo.url} alt="Fahed Jewelry Manufacturing" className="size-28 rounded-full object-cover shadow-gold ring-2 ring-gold/50" />
           <p className="mt-6 max-w-sm font-display text-2xl leading-snug">
             Fine jewelry, <em className="text-gold-gradient">forged by hand</em> in the mountains of Keserwan.
           </p>

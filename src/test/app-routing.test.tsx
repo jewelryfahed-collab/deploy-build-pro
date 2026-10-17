@@ -1,6 +1,8 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter, rootRouteId } from "@tanstack/react-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@/lib/api.functions", () => new Proxy({}, { get: (_target, key) => key === "then" ? undefined : vi.fn(async () => []) }));
 
 import { routeTree } from "@/routeTree.gen";
 
