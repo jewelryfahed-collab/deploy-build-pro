@@ -63,7 +63,11 @@ export async function putFile(path: string, base64: string, message: string): Pr
     body: JSON.stringify({ message, content: base64, branch, ...(sha && { sha }) }),
   });
   if (!res.ok) throw new Error(`GitHub upload failed [${res.status}]: ${await res.text()}`);
-  return `https://raw.githubusercontent.com/${repo}/${branch}/${path}`;
+  // Files land under the repo's `public/` folder, which the deployed site serves at its
+  // root. Return that site-relative path (e.g. "/media/products/x.webp") instead of a
+  // raw.githubusercontent.com link, so the image is served by the site itself — fast,
+  // on the live domain, and not tied to one commit/branch of the raw CDN.
+  return "/" + path.replace(/^public\//, "");
 }
 
 export function textToBase64(text: string): string {
