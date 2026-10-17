@@ -1,5 +1,5 @@
 {
-  "exported_at": "2026-10-17T13:02:19.726Z",
+  "exported_at": "2026-10-17T13:10:52.116Z",
   "products": [
     {
       "id": "00bb0b23-2c24-4050-bfa7-2cf35b308fdd",
@@ -733,7 +733,7 @@
       "description_fr": null,
       "price_usd": 98,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/ebddf89f-870e-46b5-b049-8090db362c5a/pearl-y-necklace.jpg",
+      "image_url": "/media/products/8297a5f6-c630157a-9dca-4126-ab3a-f467a8265e43.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -763,7 +763,7 @@
       "description_fr": null,
       "price_usd": 38,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/ae3623a9-490a-474e-87da-a1df38f98026/pearl-chain-bracelet.jpg",
+      "image_url": "/media/products/62994f9b-c630157a-9dca-4126-ab3a-f467a8265e43.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
@@ -793,7 +793,7 @@
       "description_fr": null,
       "price_usd": 28,
       "compare_at_usd": null,
-      "image_url": "https://id-preview--7fb7b80f-2cd4-47ae-8f0e-9d1ad6d1fa8e.lovable.app/__l5e/assets-v1/3de8e189-1a16-4eb0-b097-d7f426e8f377/baby-safety-pin-charm.jpg",
+      "image_url": "/media/products/7d03d307-1026a8f3-afad-4571-9f36-b88e7922dfe0.webp",
       "gallery": [],
       "model_url": null,
       "metal": "18k_gold",
